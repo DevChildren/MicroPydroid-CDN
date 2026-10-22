@@ -1,4 +1,4 @@
-name: Build ESP32-S3 Android Toolchain
+name: Build ESP32 Android Toolchain
 
 on:
   workflow_dispatch:
@@ -12,15 +12,9 @@ jobs:
     steps:
       - name: Download Pre-built ARM64 Toolchain
         run: |
-          echo "Mencari tautan rilis ARM64 terbaru secara otomatis dari API Espressif..."
-          
-          # Skrip ini mencari URL unduhan asli secara dinamis agar tidak terkena 404
-          DOWNLOAD_URL=$(curl -s https://api.github.com/repos/espressif/crosstool-NG/releases | grep "browser_download_url" | grep "xtensa-esp32s3-elf" | grep -E "aarch64|arm64" | head -n 1 | cut -d '"' -f 4)
-          
-          echo "Ditemukan URL valid: $DOWNLOAD_URL"
-          
-          # Mengunduh dan menamai ulang menjadi toolchain.tar.xz agar mudah diekstrak
-          wget -q -O toolchain.tar.xz "$DOWNLOAD_URL"
+          echo "Mengunduh toolchain aarch64 statis dari Espressif..."
+          # Ganti tulisan di bawah dengan link URL .tar.xz yang Anda temukan
+          wget -q -O toolchain.tar.xz "https://github.com/espressif/crosstool-NG/releases/download/esp-15.3.0_20260914/xtensa-esp-elf-15.3.0_20260914-arm-linux-gnueabi.tar.xz"
           
       - name: Repackage for MicroPyDroidIDE
         run: |
@@ -28,13 +22,15 @@ jobs:
           tar -xf toolchain.tar.xz
           
           echo "Membungkus ulang ke format ZIP untuk Android..."
-          mkdir -p esp32s3_pack
-          cp -r xtensa-esp32s3-elf/* esp32s3_pack/
+          mkdir -p esp32_pack
           
-          zip -q -r esp32s3_compiler_pack_android_native.zip esp32s3_pack/
+          # Menyalin dari folder xtensa-esp-elf (nama folder bawaan dari Espressif yang baru)
+          cp -r xtensa-esp-elf/* esp32_pack/
+          
+          zip -q -r esp32_compiler_pack_android_native.zip esp32_pack/
 
       - name: Upload to GitHub Releases
         uses: softprops/action-gh-release@v1
         with:
-          files: esp32s3_compiler_pack_android_native.zip
+          files: esp32_compiler_pack_android_native.zip
           tag_name: v1.0-android
