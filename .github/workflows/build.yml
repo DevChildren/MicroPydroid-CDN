@@ -14,7 +14,7 @@ jobs:
         run: |
           echo "Mengunduh toolchain aarch64 statis dari Espressif..."
           # Ganti tulisan di bawah dengan link URL .tar.xz yang Anda temukan
-          wget -q -O toolchain.tar.xz "https://github.com/espressif/crosstool-NG/releases/download/esp-15.3.0_20260914/xtensa-esp-elf-15.3.0_20260914-arm-linux-gnueabi.tar.xz"
+          wget -q -O toolchain.tar.xz "https://github.com/espressif/crosstool-NG/releases/download/esp-16.2.0_20260914/xtensa-esp-elf-16.2.0_20260914-aarch64-linux-gnu.tar.xz"
           
       - name: Repackage for MicroPyDroidIDE
         run: |
