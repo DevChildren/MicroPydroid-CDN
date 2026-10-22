@@ -38,8 +38,17 @@ jobs:
           cd crosstool-NG
           # Konfigurasi khusus untuk ESP32-S3 Android
           ./ct-ng xtensa-esp32s3-elf
-          # Kita hapus "|| true" agar server berhenti jika ada error kompilasi
-          ./ct-ng build 
+          
+          # --- TAMBAHAN BARU: Memperbaiki tautan Zlib yang rusak ---
+          echo "Mengunduh zlib secara manual dari repositori fossils..."
+          mkdir -p .build/tarballs
+          wget -q -c -O .build/tarballs/zlib-1.2.12.tar.gz https://zlib.net/fossils/zlib-1.2.12.tar.gz
+          wget -q -c -O .build/tarballs/zlib-1.2.11.tar.gz https://zlib.net/fossils/zlib-1.2.11.tar.gz
+          wget -q -c -O .build/tarballs/zlib-1.2.13.tar.gz https://zlib.net/fossils/zlib-1.2.13.tar.gz
+          # ---------------------------------------------------------
+          
+          # Eksekusi kompilasi
+          ./ct-ng build
 
       - name: Package Release
         run: |
