@@ -32,7 +32,7 @@ jobs:
 
       - name: Build Toolchain (aarch64-linux-android)
         run: |
-          cd crosstool-NG
+          cd crosstool-NGh
           # Konfigurasi khusus untuk ESP32-S3 Android
           ./ct-ng xtensa-esp32s3-elf
           # Eksekusi kompilasi (ini akan memakan waktu sekitar 1-2 jam)
