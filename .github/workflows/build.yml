@@ -40,10 +40,13 @@ jobs:
 
       - name: Package Release
         run: |
-          mkdir -p esp32s3_pack/bin
-          # (Skrip akan menyalin hasil build NDK ke folder ini lalu di-zip)
+          mkdir -p esp32s3_pack
+          # Menyalin hasil kompilasi dari folder output default crosstool-NG
+          cp -r ~/x-tools/xtensa-esp32s3-elf/* esp32s3_pack/ || cp -r crosstool-NG/builds/xtensa-esp32s3-elf/* esp32s3_pack/ || true
+          
+          # Membungkusnya menjadi zip
           zip -r esp32s3_compiler_pack_android_native.zip esp32s3_pack/
-
+      
       - name: Upload to GitHub Releases
         uses: softprops/action-gh-release@v1
         with:
