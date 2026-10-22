@@ -12,21 +12,26 @@ jobs:
     steps:
       - name: Download Pre-built ARM64 Toolchain
         run: |
-          echo "Mengunduh pre-built toolchain aarch64 resmi dari Espressif..."
-          # Menggunakan rilis stabil Espressif untuk Linux ARM64 (aarch64)
-          wget -q https://github.com/espressif/crosstool-NG/releases/download/esp-13.2.0_20230928/xtensa-esp32s3-elf-esp-13.2.0_20230928-aarch64-linux-gnu.tar.xz
+          echo "Mencari tautan rilis ARM64 terbaru secara otomatis dari API Espressif..."
+          
+          # Skrip ini mencari URL unduhan asli secara dinamis agar tidak terkena 404
+          DOWNLOAD_URL=$(curl -s https://api.github.com/repos/espressif/crosstool-NG/releases | grep "browser_download_url" | grep "xtensa-esp32s3-elf" | grep -E "aarch64|arm64" | head -n 1 | cut -d '"' -f 4)
+          
+          echo "Ditemukan URL valid: $DOWNLOAD_URL"
+          
+          # Mengunduh dan menamai ulang menjadi toolchain.tar.xz agar mudah diekstrak
+          wget -q -O toolchain.tar.xz "$DOWNLOAD_URL"
           
       - name: Repackage for MicroPyDroidIDE
         run: |
-          echo "Mengekstrak file..."
-          tar -xf *.tar.xz
+          echo "Mengekstrak fail..."
+          tar -xf toolchain.tar.xz
           
-          echo "Membungkus ulang ke format ZIP..."
+          echo "Membungkus ulang ke format ZIP untuk Android..."
           mkdir -p esp32s3_pack
-          # Memindahkan isi folder hasil ekstraksi ke folder pack kita
           cp -r xtensa-esp32s3-elf/* esp32s3_pack/
           
-          zip -r esp32s3_compiler_pack_android_native.zip esp32s3_pack/
+          zip -q -r esp32s3_compiler_pack_android_native.zip esp32s3_pack/
 
       - name: Upload to GitHub Releases
         uses: softprops/action-gh-release@v1
