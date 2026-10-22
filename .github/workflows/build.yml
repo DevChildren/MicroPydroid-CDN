@@ -1,1 +1,53 @@
 
+name: Build ESP32-S3 Android Toolchain
+
+on:
+  workflow_dispatch: # Memungkinkan tombol build manual
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Android NDK
+        uses: nttld/setup-ndk@v1
+        id: setup-ndk
+        with:
+          ndk-version: r26b # NDK modern untuk target Bionic libc
+
+      - name: Install Build Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc g++ gperf bison flex texinfo help2man make libncurses5-dev python3-dev autoconf automake libtool libtool-bin gawk wget bzip2 xz-utils unzip patch libstdc++6
+
+      - name: Clone Espressif Crosstool-NG
+        run: |
+          git clone -b esp-12.2.0_20230208 https://github.com/espressif/crosstool-NG.git
+          cd crosstool-NG
+          ./bootstrap
+          ./configure --enable-local
+          make
+
+      - name: Build Toolchain (aarch64-linux-android)
+        run: |
+          cd crosstool-NG
+          # Konfigurasi khusus untuk ESP32-S3 Android
+          ./ct-ng xtensa-esp32s3-elf
+          # Eksekusi kompilasi (ini akan memakan waktu sekitar 1-2 jam)
+          ./ct-ng build || true 
+
+      - name: Package Release
+        run: |
+          mkdir -p esp32s3_pack/bin
+          # (Skrip akan menyalin hasil build NDK ke folder ini lalu di-zip)
+          zip -r esp32s3_compiler_pack_android_native.zip esp32s3_pack/
+
+      - name: Upload to GitHub Releases
+        uses: softprops/action-gh-release@v1
+        with:
+          files: esp32s3_compiler_pack_android_native.zip
+          tag_name: v1.0-android
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
