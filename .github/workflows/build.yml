@@ -1,4 +1,4 @@
-name: Build ESP32 Android Toolchain
+name: Build ESP32 Android Toolchain Native
 
 on:
   workflow_dispatch:
@@ -10,23 +10,58 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Download Pre-built ARM64 Toolchain
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Install System Dependencies
         run: |
-          echo "Mengunduh toolchain aarch64 statis dari Espressif..."
-          # Ganti tulisan di bawah dengan link URL .tar.xz yang Anda temukan
-          wget -q -O toolchain.tar.xz "https://github.com/espressif/crosstool-NG/releases/download/esp-16.2.0_20260914/xtensa-esp-elf-16.2.0_20260914-aarch64-linux-gnu.tar.xz"
-          
-      - name: Repackage for MicroPyDroidIDE
+          sudo apt-get update
+          sudo apt-get install -y gcc g++ gperf bison flex texinfo help2man make libncurses5-dev python3-dev autoconf automake libtool libtool-bin gawk wget bzip2 xz-utils unzip patch libstdc++6 rsync
+
+      - name: Clone Espressif Crosstool-NG (Master Branch)
         run: |
-          echo "Mengekstrak fail..."
-          tar -xf toolchain.tar.xz
+          echo "Mengambil master branch terbaru yang memiliki target xtensa-esp-elf..."
+          git clone https://github.com/espressif/crosstool-NG.git
+          cd crosstool-NG
+          ./bootstrap
+          ./configure --enable-local
+          make
+
+      - name: Build Toolchain untuk Android (Proses Lama)
+        run: |
+          cd crosstool-NG
           
-          echo "Membungkus ulang ke format ZIP untuk Android..."
+          # 1. Inisialisasi target universal yang sudah terbukti
+          ./ct-ng xtensa-esp-elf
+          
+          # 2. Patch Zlib agar terhindar dari Error 404 (Fossils)
+          sed -i 's|http://zlib.net|https://zlib.net/fossils|g' scripts/build/companion_libs/050-zlib.sh || true
+          sed -i 's|https://zlib.net|https://zlib.net/fossils|g' scripts/build/companion_libs/050-zlib.sh || true
+          
+          # CATATAN: Jika pada skrip asli Anda ada perintah tambahan untuk mengunci NDK/Android (Canadian Cross),
+          # prosesnya akan berjalan di sini. Jika tidak, ia akan merakit berdasarkan konfigurasi standar.
+          
+          # 3. Eksekusi kompilasi (Tanpa peredam error agar kita tahu jika ada masalah)
+          ./ct-ng build
+          
+      - name: Package Release
+        run: |
           mkdir -p esp32_pack
           
-          # Menyalin dari folder xtensa-esp-elf (nama folder bawaan dari Espressif yang baru)
-          cp -r xtensa-esp-elf/* esp32_pack/
+          echo "Mencari lokasi hasil build..."
+          # Lacak otomatis direktori kompilator universal
+          COMPILER_PATH=$(find ~ -name "xtensa-esp-elf-g++" | head -n 1)
           
+          if [ -z "$COMPILER_PATH" ]; then
+            echo "Compiler tidak ditemukan! Proses build kemungkinan gagal."
+            exit 1
+          fi
+          
+          COMPILER_DIR=$(dirname $(dirname $COMPILER_PATH))
+          echo "Menyalin dari: $COMPILER_DIR"
+          cp -r $COMPILER_DIR/* esp32_pack/
+          
+          # Bungkus menjadi ZIP
           zip -q -r esp32_compiler_pack_android_native.zip esp32_pack/
 
       - name: Upload to GitHub Releases
