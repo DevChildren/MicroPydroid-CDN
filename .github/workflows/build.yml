@@ -38,16 +38,28 @@ jobs:
           cd crosstool-NG
           # Konfigurasi khusus untuk ESP32-S3 Android
           ./ct-ng xtensa-esp32s3-elf
-          # Eksekusi kompilasi (ini akan memakan waktu sekitar 1-2 jam)
-          ./ct-ng build || true 
+          # Kita hapus "|| true" agar server berhenti jika ada error kompilasi
+          ./ct-ng build 
 
       - name: Package Release
         run: |
           mkdir -p esp32s3_pack
-          # Menyalin hasil kompilasi dari folder output default crosstool-NG
-          cp -r ~/x-tools/xtensa-esp32s3-elf/* esp32s3_pack/ || cp -r crosstool-NG/builds/xtensa-esp32s3-elf/* esp32s3_pack/ || true
           
-          # Membungkusnya menjadi zip
+          # Lacak otomatis di mana server menyimpan hasil build-nya
+          echo "Melacak lokasi xtensa-esp32s3-elf-g++..."
+          COMPILER_PATH=$(find ~ -name "xtensa-esp32s3-elf-g++" | head -n 1)
+          
+          if [ -z "$COMPILER_PATH" ]; then
+            echo "Compiler tidak ditemukan! Proses build kemungkinan gagal."
+            exit 1
+          fi
+          
+          # Ambil folder utamanya dan salin isinya
+          COMPILER_DIR=$(dirname $(dirname $COMPILER_PATH))
+          echo "Menyalin dari: $COMPILER_DIR"
+          cp -r $COMPILER_DIR/* esp32s3_pack/
+          
+          # Bungkus menjadi ZIP
           zip -r esp32s3_compiler_pack_android_native.zip esp32s3_pack/
       
       - name: Upload to GitHub Releases
